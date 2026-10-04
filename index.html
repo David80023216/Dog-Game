@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#6db87a">
+<title>Bark Avenue — Dog Board Game</title>
+<style>
+:root{
+  --ink:#3a2c1a; --card:#fffdf4; --accent:#ff8c42; --accent-d:#c25e1f;
+  --good:#3fae5a; --bad:#d63c3c; --blue:#4aa3ff; --gold:#f2c531;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:linear-gradient(180deg,#8fd0f7 0%,#bfe8c9 55%,#9fdc9a 100%);
+  color:var(--ink); display:flex; justify-content:center; min-height:100vh;
+}
+#app{width:100%;max-width:480px;min-height:100vh;display:flex;flex-direction:column;gap:8px;padding:8px 8px 12px}
+/* top bar */
+.topbar{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:14px;padding:8px 10px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.topbar .title{font-weight:800;font-size:17px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .boardtag{font-size:11px;font-weight:700;background:#e8f5e9;border-radius:8px;padding:3px 7px;white-space:nowrap}
+.iconbtn{border:none;background:#f3ead8;border-radius:10px;font-size:18px;width:38px;height:38px;cursor:pointer;position:relative;flex:none}
+.iconbtn:active{transform:scale(.93)}
+.iconbtn .dot{position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:var(--bad);display:none}
+.iconbtn .dot.show{display:block}
+/* players */
+.players{display:flex;gap:8px}
+.pcard{flex:1;background:var(--card);border-radius:14px;padding:8px 10px;box-shadow:0 2px 6px rgba(0,0,0,.10);border:3px solid transparent;font-size:12px}
+.pcard.active{border-color:var(--accent)}
+.pcard .pname{font-weight:800;font-size:14px}
+.pcard .prow{display:flex;justify-content:space-between;margin-top:2px}
+/* board */
+#boardWrap{background:linear-gradient(145deg,#3f8f4f,#2f7d3a);border-radius:16px;padding:8px;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+#board{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1/1;gap:3px;position:relative}
+.tile{background:var(--card);border-radius:7px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:8px 1px 1px;overflow:hidden;cursor:pointer;min-height:0}
+.tile .tcolor{position:absolute;top:0;left:0;right:0;height:7px}
+.tile .ticon{font-size:19px;line-height:1.15;margin-top:1px}
+.tile .tname{font-size:7px;line-height:1.15;font-weight:600;padding:0 1px}
+.tile .tmeta{font-size:7px;color:#777}
+.tile .tokens{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:11px;line-height:1.2;pointer-events:none}
+.tile.sel{outline:3px solid var(--gold)}
+.tile.own0{box-shadow:inset 0 0 0 2px var(--blue)}
+.tile.own1{box-shadow:inset 0 0 0 2px #ff5b5b}
+.tile.hop{animation:hop .28s}
+@keyframes hop{0%{transform:scale(1)}40%{transform:scale(1.18);background:#fff3c4}100%{transform:scale(1)}}
+#center{grid-row:2/8;grid-column:2/8;background:linear-gradient(160deg,#fffdf4,#fdf3d8);border-radius:12px;padding:10px;overflow-y:auto;font-size:13px;box-shadow:inset 0 0 0 2px #e8d9ae}
+#center h3{margin:0 0 4px;font-size:15px}
+#center .crow{display:flex;justify-content:space-between;margin:3px 0;font-size:12px}
+.cbtn{border:none;border-radius:10px;padding:10px 12px;font-weight:800;font-size:14px;cursor:pointer;background:var(--blue);color:#fff;margin:4px 4px 0 0}
+.cbtn.green{background:var(--good)} .cbtn.orange{background:var(--accent)} .cbtn.red{background:var(--bad)} .cbtn.grey{background:#b9b2a4}
+.cbtn:disabled{opacity:.45}
+.cbtn:active{transform:scale(.96)}
+/* controls */
+#controls{display:flex;gap:8px;align-items:stretch}
+.multseg{display:flex;background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.10)}
+.multseg button{border:none;background:transparent;padding:0 11px;font-weight:800;font-size:14px;cursor:pointer;color:var(--ink)}
+.multseg button.on{background:var(--ink);color:#fff}
+#rollBtn{flex:1;border:none;border-radius:16px;background:var(--accent);color:#fff;font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 var(--accent-d);padding:12px}
+#rollBtn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--accent-d)}
+#rollBtn:disabled{opacity:.5;box-shadow:none}
+.dicebox{display:flex;align-items:center;gap:4px;background:var(--card);border-radius:14px;padding:0 10px;box-shadow:0 2px 6px rgba(0,0,0,.10);font-weight:800}
+.die{font-size:30px;display:inline-block}
+.die.rolling{animation:dshake .55s}
+@keyframes dshake{0%{transform:rotate(0) scale(1)}25%{transform:rotate(90deg) scale(1.25)}50%{transform:rotate(-90deg) scale(1.1)}75%{transform:rotate(45deg) scale(1.2)}100%{transform:rotate(0) scale(1)}}
+/* log */
+#log{background:rgba(255,253,244,.92);border-radius:12px;height:74px;overflow-y:auto;font-size:11px;padding:6px 9px;box-shadow:inset 0 1px 4px rgba(0,0,0,.08)}
+#log div{margin:1px 0}
+/* modal */
+.mback{position:fixed;inset:0;background:rgba(30,20,10,.55);display:flex;align-items:center;justify-content:center;z-index:60;padding:14px;animation:fadein .18s}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.modal{background:var(--card);border-radius:20px;width:100%;max-width:420px;max-height:86vh;overflow-y:auto;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:pop .2s}
+@keyframes pop{from{transform:scale(.92)}to{transform:scale(1)}}
+.modal h2{margin:0 0 8px;font-size:19px;text-align:center}
+.modal p{font-size:13px}
+.mbtn{display:block;width:100%;border:none;border-radius:12px;padding:13px;margin:7px 0;font-size:15px;font-weight:800;cursor:pointer;background:var(--blue);color:#fff}
+.mbtn.green{background:var(--good)} .mbtn.orange{background:var(--accent)} .mbtn.red{background:var(--bad)} .mbtn.grey{background:#cfc8b8;color:var(--ink)}
+.mbtn:disabled{opacity:.45}
+.mbtn:active{transform:scale(.98)}
+.mrow{display:flex;gap:8px}.mrow .mbtn{flex:1}
+.cardreveal{text-align:center;padding:8px}
+.cardreveal .big{font-size:64px;animation:pop .3s}
+.vaults{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+.vault{border:3px solid #d9c89a;background:#fdf3d8;border-radius:14px;font-size:38px;padding:14px 4px;cursor:pointer;text-align:center}
+.vault.picked{border-color:var(--gold);background:#fff3c4}
+.vault small{display:block;font-size:11px;font-weight:800;margin-top:4px}
+.shopitem{display:flex;align-items:center;gap:10px;background:#fbf6e9;border-radius:12px;padding:10px;margin:8px 0}
+.shopitem .sic{font-size:32px}
+.shopitem .sinfo{flex:1}.shopitem .sinfo b{font-size:14px}.shopitem .sinfo div{font-size:11px;color:#776}
+.shopitem .mbtn{width:auto;margin:0;padding:10px 14px;font-size:13px}
+.albumset{margin:10px 0}.albumset h4{margin:6px 0;font-size:14px}
+.acards{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.acard{background:#fbf6e9;border-radius:10px;text-align:center;padding:6px 2px;font-size:10px}
+.acard .ae{font-size:26px}
+.acard.missing{filter:grayscale(1);opacity:.45}
+table.lb{width:100%;font-size:13px;border-collapse:collapse}
+table.lb td{padding:7px 4px;border-bottom:1px solid #eee}
+table.lb td:last-child{text-align:right;font-weight:800}
+.kv{display:flex;justify-content:space-between;font-size:13px;margin:4px 0}
+#toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(10px);background:#3a2c1a;color:#fff;padding:11px 18px;border-radius:22px;z-index:99;opacity:0;transition:.25s;font-size:14px;font-weight:600;max-width:88vw;text-align:center;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+.turnhint{text-align:center;font-size:13px;font-weight:700;margin:2px 0}
+@media (max-height:700px){ .tile .tname{display:none} }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="title">🐾 Bark Avenue</div>
+    <div class="boardtag" id="boardTag">Board 1</div>
+    <button class="iconbtn" id="btnShop" title="Shop">🛍️</button>
+    <button class="iconbtn" id="btnAlbum" title="Pup Portraits">🖼️<span class="dot" id="albumDot"></span></button>
+    <button class="iconbtn" id="btnChest" title="Treat Chest">🎁<span class="dot" id="chestDot"></span></button>
+    <button class="iconbtn" id="btnBoard" title="Leaderboard">🏆</button>
+    <button class="iconbtn" id="btnMenu" title="Menu">☰</button>
+  </div>
+  <div class="players">
+    <div class="pcard" id="pcard0"></div>
+    <div class="pcard" id="pcard1"></div>
+  </div>
+  <div class="turnhint" id="turnHint"></div>
+  <div id="boardWrap"><div id="board"></div></div>
+  <div id="controls">
+    <div class="multseg" id="multSeg">
+      <button data-m="1" class="on">1×</button><button data-m="2">2×</button><button data-m="5">5×</button><button data-m="10">10×</button>
+    </div>
+    <div class="dicebox"><span id="diceFaces"><span class="die">🎲</span><span class="die">🎲</span></span><span id="diceCount">30</span></div>
+    <button id="rollBtn">ROLL</button>
+  </div>
+  <div id="log"></div>
+</div>
+<div id="modalRoot"></div>
+<div id="toast"></div>
+<script>
+'use strict';
+/* ============================================================
+   BARK AVENUE — an original dog-themed property board game.
+   Solo vs AI. All art is emoji + CSS. No external requests.
+   ============================================================ */
+/* ---------------- backend config & leaderboard API ----------------
+   Set BACKEND_URL to a Supabase-style REST base URL to enable the
+   GLOBAL leaderboard, e.g. { BACKEND_URL: "https://xyz.supabase.co/rest/v1" }.
+   Leave it empty ("") for offline/local-only mode: the game then uses
+   the on-device personal-bests leaderboard exclusively.
+   Every call below fails gracefully (empty URL, network error, timeout)
+   and the game keeps working fully offline. No API keys are used. */
+const CONFIG = { BACKEND_URL: "" };
+const API_TIMEOUT_MS = 8000;
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+async function apiFetch(path, opts){
+  const base = (CONFIG.BACKEND_URL || "").replace(/\/+$/, "");
+  if(!base) return null;                       // offline/local-only mode
+  if(typeof fetch === "undefined") return null;
+  let ctrl = null, timer = null;
+  try{ if(typeof AbortController !== "undefined"){ ctrl = new AbortController(); } }catch(e){ ctrl = null; }
+  if(ctrl){ timer = setTimeout(()=>{ try{ ctrl.abort(); }catch(e){} }, API_TIMEOUT_MS); }
+  try{
+    const res = await fetch(base + path, Object.assign({ signal: ctrl ? ctrl.signal : undefined }, opts || {}));
+    if(!res || !res.ok) return null;
+    const data = await res.json().catch(() => null);
+    return (data === undefined) ? null : data;
+  }catch(e){ return null; }                     // network error / timeout -> graceful
+  finally{ if(timer) clearTimeout(timer); }
+}
+/* POST {BACKEND_URL}/scores — entry: {player, score, boards, date} */
+async function submitScore(entry){
+  try{
+    if(!CONFIG.BACKEND_URL) return { ok:false, reason:"no-backend" };
+    const clean = {
+      player: String((entry && entry.player) || "You").slice(0, 24),
+      score: Math.round((entry && entry.score) || 0),
+      boards: (entry && entry.boards) | 0,
+      date: (entry && entry.date) || new Date().toISOString()
+    };
+    const r = await apiFetch("/scores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(clean)
+    });
+    return { ok: r !== null };
+  }catch(e){ return { ok:false, reason:"error" }; }
+}
+/* GET {BACKEND_URL}/scores -> top entries or null when unavailable */
+async function fetchScores(){
+  try{
+    if(!CONFIG.BACKEND_URL) return null;
+    const r = await apiFetch("/scores", { method: "GET" });
+    if(!Array.isArray(r)) return null;
+    return r.filter(x => x && typeof x.score === "number")
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20)
+      .map(x => ({
+        player: String(x.player || "?").slice(0, 24),
+        score: Math.round(x.score),
+        boards: x.boards | 0,
+        date: x.date || ""
+      }));
+  }catch(e){ return null; }
+}
+/* ---------------- utils ---------------- */
+const $ = id => document.getElementById(id);
+const sleep = ms => (G.fast ? Promise.resolve() : new Promise(r => setTimeout(r, ms)));
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fmt = n => Math.round(n).toLocaleString('en-US');
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=rnd(i+1); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+const DICE_FACE = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+/* ---------------- game data (all original) ---------------- */
+const SETS = [
+  { name:'Puppy Park',   color:'#8d5a2b', icon:'🌳', props:[
+    { name:'Swing Set Lawn', icon:'🛝', price:60,  rent:6 },
+    { name:'Fetch Field',    icon:'🥏', price:60,  rent:8 } ]},
+  { name:'Barkery',       color:'#5bc8e8', icon:'🧁', props:[
+    { name:'Biscuit Bakery', icon:'🍪', price:100, rent:10 },
+    { name:'Pupcake Stand',  icon:'🧁', price:120, rent:12 } ]},
+  { name:'Grooming Spa',  color:'#e87fb0', icon:'🛁', props:[
+    { name:'Bubble Bath Spa',  icon:'🫧', price:140, rent:14 },
+    { name:'Fancy Fur Salon',  icon:'💅', price:160, rent:16 } ]},
+  { name:'Dog Beach',     color:'#f08c2e', icon:'🏖️', props:[
+    { name:'Sandy Shores',  icon:'🏝️', price:180, rent:18 },
+    { name:'Surf Pup Cove', icon:'🏄', price:200, rent:22 } ]},
+  { name:'Treat Factory', color:'#d63c3c', icon:'🏭', props:[
+    { name:'Biscuit Factory', icon:'🦴', price:220, rent:24 },
+    { name:'Chew Toy Works',  icon:'🧸', price:240, rent:26 } ]},
+  { name:'Vet Clinic',    color:'#f2c531', icon:'🏥', props:[
+    { name:'Happy Tails Vet',  icon:'🩺', price:260, rent:28 },
+    { name:'Pawdicure Palace', icon:'🐾', price:300, rent:32 } ]},
+  { name:'Kennel Club',   color:'#3fae5a', icon:'🏠', props:[
+    { name:'Cozy Kennel',  icon:'🛖', price:320, rent:34 },
+    { name:'Luxury Lodge', icon:'🏰', price:360, rent:38 } ]},
+  { name:'Howl Heights',  color:'#3b6fd4', icon:'🌙', props:[
+    { name:'Moonlight Manor',    icon:'🌕', price:400, rent:44 },
+    { name:'Barkingham Palace',  icon:'👑', price:450, rent:50 } ]},
+];
+/* tile layout: 28 tiles, index 0 = START, clockwise */
+const LAYOUT = [
+  { t:'start' },
+  { t:'prop', s:0, pi:0 }, { t:'prop', s:0, pi:1 },
+  { t:'chance' },
+  { t:'prop', s:1, pi:0 }, { t:'prop', s:1, pi:1 },
+  { t:'tax', amount:100, name:'Vet Bill', icon:'🧾', desc:'Pay up for checkups!' },
+  { t:'pound' },
+  { t:'prop', s:2, pi:0 }, { t:'prop', s:2, pi:1 },
+  { t:'heist' },
+  { t:'prop', s:3, pi:0 }, { t:'prop', s:3, pi:1 },
+  { t:'fountain' },
+  { t:'prop', s:4, pi:0 }, { t:'prop', s:4, pi:1 },
+  { t:'shutdown' },
+  { t:'prop', s:5, pi:0 }, { t:'prop', s:5, pi:1 },
+  { t:'chance' },
+  { t:'prop', s:6, pi:0 },
+  { t:'gotopound' },
+  { t:'prop', s:6, pi:1 },
+  { t:'heist' },
+  { t:'prop', s:7, pi:0 }, { t:'prop', s:7, pi:1 },
+  { t:'shutdown' },
+  { t:'tax', amount:150, name:'Grooming Tax', icon:'✂️', desc:'Every pup pays for pretty.' },
+];
+const THEMES = [
+  { name:'Puppy Meadows', names:[
+    'Swing Set Lawn','Fetch Field','Biscuit Bakery','Pupcake Stand','Bubble Bath Spa','Fancy Fur Salon',
+    'Sandy Shores','Surf Pup Cove','Biscuit Factory','Chew Toy Works','Happy Tails Vet','Pawdicure Palace',
+    'Cozy Kennel','Luxury Lodge','Moonlight Manor','Barkingham Palace']},
+  { name:'Bark Beach', names:[
+    'Sandy Paws Park','Driftwood Den','Coconut Bakery','Boardwalk Bites','Seashell Spa','Coral Groom Room',
+    'Tidal Pool','Wave Rider Reef','Pier Treats','Saltwater Snacks','Lifeguard Vet','Sunburn Soothers',
+    'Dune Kennel','Pelican Perch Lodge','Lighthouse Lookout','Sunset Sniff Manor']},
+  { name:'Howl Heights', names:[
+    'Pine Trail Park','Summit Sniff Field','Alpine Bakery','Cloud Nine Cakes','Glacier Spa','Frosty Fur Salon',
+    'Echo Canyon','Craggy Climb Cove','Thunder Treats','Avalanche Eats','Mountain Vet','Peak Pawdicure',
+    'Aurora Kennel','Skyline Suites','Moonrise Manor','Starlight Palace']},
+];
+const CHANCE_CARDS = [
+  { id:'buried',   icon:'🦴', name:'Buried Bones!',   desc:'You dug up a secret stash. Collect 150 bones.' },
+  { id:'vetbill',  icon:'🩺', name:'Vet Checkup',     desc:'Routine checkup for the pups. Pay 100 bones.' },
+  { id:'zoomies',  icon:'💨', name:'Zoomies!',        desc:'Full-speed zoomies! Advance to Home and collect salary.' },
+  { id:'squirrel', icon:'🐿️', name:'Squirrel!',       desc:'Chase it! Move forward 4 spaces.' },
+  { id:'digging',  icon:'🕳️', name:'Caught Digging',  desc:'The park ranger saw everything. Go straight to the Pound.' },
+  { id:'freecard', icon:'🎟️', name:'Good Pup Card',   desc:'Such a good pup! Keep this card: get out of the Pound free.' },
+  { id:'truck',    icon:'🚚', name:'Treat Truck Tip', desc:'A treat truck tipped over! Collect 250 bones.' },
+  { id:'fleas',    icon:'🦟', name:'Fleas!',          desc:'Flea treatment needed: pay 40 bones per dog house you own.' },
+  { id:'bestshow', icon:'🏆', name:'Best in Show!',   desc:'The judges adore you. Collect 300 bones.' },
+  { id:'slippers', icon:'🥿', name:'Chewed Slippers', desc:'Someone\'s human is upset. Pay 150 bones.' },
+  { id:'beachday', icon:'⛲', name:'Fountain Day',    desc:'Advance to the Treat Fountain.' },
+  { id:'nap',      icon:'😴', name:'Nap Time',        desc:'Too sleepy to go on. Go back 3 spaces.' },
+];
+const ALBUM_SETS = [
+  { name:'Playful Pups', cards:[
+    { id:'p1', name:'Biscuit the Beagle', icon:'🐶', stars:1 },
+    { id:'p2', name:'Waffles the Corgi',  icon:'🐕', stars:1 },
+    { id:'p3', name:'Pickles the Pug',    icon:'🐩', stars:2 },
+    { id:'p4', name:'Captain Floof',      icon:'🦮', stars:3 } ]},
+  { name:'Sporty Pups', cards:[
+    { id:'s1', name:'Dash the Greyhound', icon:'🐕‍🦺', stars:1 },
+    { id:'s2', name:'Splash the Lab',     icon:'🦮', stars:1 },
+    { id:'s3', name:'Bolt the Collie',    icon:'🐶', stars:2 },
+    { id:'s4', name:'Turbo the Terrier',  icon:'🐕', stars:3 } ]},
+  { name:'Fancy Pups', cards:[
+    { id:'f1', name:'Duchess the Poodle', icon:'🐩', stars:1 },
+    { id:'f2', name:'Sir Barksalot',      icon:'🐶', stars:2 },
+    { id:'f3', name:'Princess Paw',       icon:'🐕', stars:2 },
+    { id:'f4', name:'Lord Fluffington',   icon:'🦮', stars:3 } ]},
+];
+const ALL_CARDS = [];
+ALBUM_SETS.forEach((s, si) => s.cards.forEach((c, ci) => ALL_CARDS.push(Object.assign({ set:si }, c))));
+const SHOP_ITEMS = [
+  { id:'dice10', icon:'🎲', name:'10 Dice',       desc:'A handful of lucky dice.',            price:100 },
+  { id:'dice30', icon:'🎲', name:'30 Dice',       desc:'A big bag of lucky dice. Great value!', price:250 },
+  { id:'shield', icon:'🛡️', name:'Chew Toy Shield', desc:'Blocks one shutdown. Hold max 3.',  price:150 },
+  { id:'pack',   icon:'🎁', name:'Treat Bag',     desc:'3 random Pup Portrait cards.',        price:100 },
+];
+const SAVE_KEY = 'barkAvenue.v1';
+const START_BONES = 1500, START_DICE = 30;
+const DICE_REGEN_CAP = 50, DICE_MAX = 99, REGEN_SECS = 45;
+const CHEST_COOLDOWN_MS = 4*3600*1000, FREE_DICE_COOLDOWN_MS = 60*1000;
+const BAIL = 50, FOUNTAIN_AMT = 100;
+const CHEST_DICE = 12, CHEST_BONES = 150;
+/* ---------------- state ---------------- */
+const G = {
+  fast:false, auto:false, loopOn:false, busy:false, over:false,
+  cur:0, mult:1, turnMult:1, selected:null,
+  boardNum:1, salary:200, priceScale:1, themeName:'Puppy Meadows',
+  tiles:[], players:[], deck:[], packs:0, album:{}, albumReward:{sets:{},all:false},
+  boardDone:false, advancing:false,
+  lb:{ netWorth:0, boards:0, fastestMs:0, heist:0 },
+  chestTs:0, freeDiceTs:0, lastRegen:0, boardStartTs:0, logArr:[],
+};
+function mkPlayer(name, icon, isAI){
+  return { name, icon, isAI, bones:START_BONES, dice:START_DICE, pos:0,
+    inPound:false, poundTurns:0, freeCards:0, shields:0 };
+}
+function priceScaleFor(n){ return n===1?1 : n===2?1.6 : n===3?2.5 : 2.5*Math.pow(1.5, n-3); }
+function salaryFor(n){ return Math.round(200*priceScaleFor(n)); }
+function themeFor(n){ return THEMES[(n-1)%THEMES.length]; }
+function nicePrice(p){ return Math.max(5, Math.round(p/5)*5); }
+function buildTiles(){
+  const scale = priceScaleFor(G.boardNum);
+  const themeNames = THEMES[(G.boardNum-1)%THEMES.length].names;
+  let pi = 0;
+  G.tiles = LAYOUT.map(def => {
+    const t = { def, owner:null, level:0, mortgaged:false };
+    if(def.t==='prop'){
+      const base = SETS[def.s].props[def.pi];
+      const nm = themeNames[pi++];
+      t.name = nm; t.icon = base.icon;
+      t.price = nicePrice(base.price*scale); t.rent = Math.max(1, Math.round(base.rent*scale));
+      t.set = def.s;
+    }
+    return t;
+  });
+}
+function newGame(){
+  G.over=false; G.busy=false; G.cur=0; G.mult=1; G.turnMult=1; G.selected=null;
+  G.boardNum=1; G.salary=salaryFor(1); G.priceScale=1; G.themeName=themeFor(1).name;
+  G.players=[mkPlayer('You','🐶',false), mkPlayer('Rex','🐕‍🦺',true)];
+  G.packs=0; G.album={}; G.albumReward={sets:{},all:false}; G.deck=[];
+  G.boardDone=false; G.advancing=false;
+  G.chestTs=0; G.freeDiceTs=0; G.lastRegen=Date.now(); G.boardStartTs=Date.now();
+  G.logArr=[];
+  buildTiles();
+  log('🐾 Welcome to Bark Avenue! Roll the dice and build your pup empire.');
+  log('🎯 First to bankrupt the other wins. Good luck!');
+  save();
+}
+/* ---------------- save / load ---------------- */
+let saveTimer=null;
+function save(){
+  if(G.fast) return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    try{
+      const data={ v:1, boardNum:G.boardNum, cur:G.cur,
+        tiles:G.tiles.map(t=>({o:t.owner,l:t.level,m:t.mortgaged?1:0})),
+        players:G.players.map(p=>({b:p.bones,d:p.dice,pos:p.pos,ip:p.inPound?1:0,pt:p.poundTurns,fc:p.freeCards,sh:p.shields})),
+        packs:G.packs, album:G.album, ar:G.albumReward, lb:G.lb,
+        chestTs:G.chestTs, freeDiceTs:G.freeDiceTs, lastRegen:G.lastRegen, boardStartTs:G.boardStartTs,
+        logArr:G.logArr.slice(-30) };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    }catch(e){/* storage unavailable: game still works for this session */}
+  }, 400);
+}
+function saveNow(){ // synchronous, for tests
+  const data={ v:1, boardNum:G.boardNum, cur:G.cur,
+    tiles:G.tiles.map(t=>({o:t.owner,l:t.level,m:t.mortgaged?1:0})),
+    players:G.players.map(p=>({b:p.bones,d:p.dice,pos:p.pos,ip:p.inPound?1:0,pt:p.poundTurns,fc:p.freeCards,sh:p.shields})),
+    packs:G.packs, album:G.album, ar:G.albumReward, lb:G.lb,
+    chestTs:G.chestTs, freeDiceTs:G.freeDiceTs, lastRegen:G.lastRegen, boardStartTs:G.boardStartTs,
+    logArr:G.logArr.slice(-30) };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  return data;
+}
+function load(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return false;
+    const d=JSON.parse(raw);
+    if(!d || d.v!==1 || !Array.isArray(d.players) || d.players.length!==2 || !Array.isArray(d.tiles) || d.tiles.length!==28) throw new Error('bad save');
+    G.boardNum=d.boardNum||1; G.salary=salaryFor(G.boardNum); G.priceScale=priceScaleFor(G.boardNum);
+    G.themeName=themeFor(G.boardNum).name; G.cur=d.cur===1?1:0;
+    buildTiles();
+    d.tiles.forEach((s,i)=>{ G.tiles[i].owner=(s.o===0||s.o===1)?s.o:null; G.tiles[i].level=clamp(s.l|0,0,5); G.tiles[i].mortgaged=!!s.m; });
+    G.players=[mkPlayer('You','🐶',false), mkPlayer('Rex','🐕‍🦺',true)];
+    d.players.forEach((s,i)=>{ const p=G.players[i]; p.bones=s.b|0; p.dice=clamp(s.d|0,0,DICE_MAX); p.pos=clamp(s.pos|0,0,27);
+      p.inPound=!!s.ip; p.poundTurns=s.pt|0; p.freeCards=s.fc|0; p.shields=clamp(s.sh|0,0,3); });
+    G.packs=d.packs|0; G.album=d.album||{}; G.albumReward=d.ar||{sets:{},all:false};
+    G.lb=Object.assign({netWorth:0,boards:0,fastestMs:0,heist:0}, d.lb);
+    G.chestTs=d.chestTs|0; G.freeDiceTs=d.freeDiceTs|0; G.lastRegen=d.lastRegen|0; G.boardStartTs=d.boardStartTs||Date.now();
+    G.logArr=Array.isArray(d.logArr)?d.logArr:[];
+    G.over=false; G.busy=false; G.selected=null; G.mult=1;
+    // nobody should load mid-pound-turn confusion; keep as-is, it's valid state
+    return true;
+  }catch(e){ return false; }
+}
+/* ---------------- economy helpers ---------------- */
+function tileAt(i){ return G.tiles[i]; }
+function setTiles(s){ return G.tiles.map((t,i)=>({t,i})).filter(x=>x.t.def.t==='prop'&&x.t.set===s); }
+function fullSet(pIdx,s){ return setTiles(s).every(x=>x.t.owner===pIdx); }
+function buildCost(t){ return Math.max(5, Math.round(t.price*0.5)); }
+function rentFor(t){
+  let r=t.rent*(t.level+1);
+  if(t.owner!==null && t.level===0 && fullSet(t.owner,t.set)) r*=2;
+  return r;
+}
+function countBuildings(pIdx){ return G.tiles.reduce((n,t)=>n+(t.owner===pIdx?t.level:0),0); }
+function netWorth(pIdx){
+  const p=G.players[pIdx];
+  let w=p.bones;
+  G.tiles.forEach(t=>{ if(t.owner===pIdx){ w+= t.mortgaged? t.price*0.5 : t.price; w+= t.level*buildCost(t)*0.5; } });
+  return Math.round(w);
+}
+function gain(pIdx,amt){ G.players[pIdx].bones+=Math.round(amt); }
+/* ---------------- log / toast ---------------- */
+function log(msg){
+  G.logArr.push(msg); if(G.logArr.length>80) G.logArr.shift();
+  const el=$('log'); if(!el) return;
+  el.innerHTML=G.logArr.slice(-40).map(m=>'<div>'+m+'</div>').join('');
+  el.scrollTop=el.scrollHeight;
+}
+let toastTimer=null;
+function toast(msg,ms){
+  if(G.auto) return;
+  const el=$('toast'); if(!el||!el.classList) return;
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'), ms||2200);
+}
+/* ---------------- rendering ---------------- */
+function tileRC(i){ // grid row/col for tile index (8x8 perimeter, clockwise from top-left)
+  if(i<8) return [1,i+1];
+  if(i<14) return [i-6,8];
+  if(i<22) return [8,22-i];
+  return [29-i,1];
+}
+function tileHTML(i){
+  const t=G.tiles[i], d=t.def;
+  const rc=tileRC(i);
+  let inner='';
+  if(d.t==='prop'){
+    const s=SETS[t.set];
+    const lvl=t.mortgaged?'🏚️':(t.level>=5?'🌟':'🏠'.repeat(t.level));
+    inner='<div class="tcolor" style="background:'+s.color+'"></div>'+
+      '<div class="ticon">'+t.icon+'</div>'+
+      '<div class="tname">'+t.name+'</div>'+
+      '<div class="tmeta">'+(t.level>0?lvl+' L'+t.level:('🦴'+fmt(t.price)))+'</div>';
+  }else{
+    const info={
+      start:['🏠','Home','+🦴'], pound:['🐾','Dog Pound','visit'], gotopound:['🚔','Go To Pound','!'],
+      fountain:['⛲','Treat Fountain','+🦴'], chance:['🍀','Lucky Leash','?'],
+      heist:['🎯','Treat Heist','!'], shutdown:['💥','Shutdown','!'],
+      tax:[''+d.icon,d.name,'🦴'+d.amount]
+    }[d.t];
+    inner='<div class="ticon">'+info[0]+'</div><div class="tname">'+info[1]+'</div><div class="tmeta">'+info[2]+'</div>';
+  }
+  let toks='';
+  if(G.players[0].pos===i) toks+='🐶';
+  if(G.players[1].pos===i) toks+='🐩';
+  if(G.players[0].inPound&&i===7) toks+='🐶';
+  if(G.players[1].inPound&&i===7) toks+='🐩';
+  const own=t.owner===0?' own0':t.owner===1?' own1':'';
+  const sel=G.selected===i?' sel':'';
+  return '<div class="tile'+own+sel+'" data-i="'+i+'" style="grid-row:'+rc[0]+';grid-column:'+rc[1]+'">'+inner+'<div class="tokens">'+toks+'</div></div>';
+}
+function renderBoard(){
+  const b=$('board'); if(!b) return;
+  let h='';
+  for(let i=0;i<28;i++) h+=tileHTML(i);
+  h+='<div id="center"></div>';
+  b.innerHTML=h;
+  const tiles=b.querySelectorAll?b.querySelectorAll('.tile'):[];
+  for(let k=0;k<tiles.length;k++){ (function(el){ el.addEventListener('click',()=>{ G.selected=parseInt(el.getAttribute('data-i'),10); renderBoard(); renderCenter(); }); })(tiles[k]); }
+  renderCenter();
+}
+function renderPlayers(){
+  for(let i=0;i<2;i++){
+    const p=G.players[i], el=$('pcard'+i); if(!el) continue;
+    const props=G.tiles.filter(t=>t.owner===i).length;
+    el.className='pcard'+(G.cur===i&&!G.over?' active':'');
+    el.innerHTML='<div class="pname">'+p.icon+' '+p.name+(p.inPound?' 🐾':'')+'</div>'+
+      '<div class="prow"><span>🦴 '+fmt(p.bones)+'</span><span>🎲 '+p.dice+'</span></div>'+
+      '<div class="prow"><span>🏠 '+props+' props</span><span>🛡️ '+p.shields+'</span></div>';
+  }
+  const dc=$('diceCount'); if(dc) dc.textContent=G.players[0].dice;
+  const bt=$('boardTag'); if(bt) bt.textContent='Board '+G.boardNum+': '+G.themeName;
+}
+function renderCenter(){
+  const c=$('center'); if(!c) return;
+  if(G.selected===null||G.selected===undefined){
+    const p=G.players[G.cur];
+    c.innerHTML='<h3>🐾 Bark Avenue</h3>'+
+      '<div class="crow"><span>Turn</span><b>'+p.icon+' '+p.name+'</b></div>'+
+      '<div class="crow"><span>Salary (passing Home)</span><b>🦴 '+fmt(G.salary)+' × mult</b></div>'+
+      '<div class="crow"><span>Your net worth</span><b>🦴 '+fmt(netWorth(0))+'</b></div>'+
+      '<p style="font-size:12px">Tap any tile to inspect it. '+(G.cur===0?'Pick a multiplier and hit ROLL!':'Rex is thinking…')+'</p>';
+    return;
+  }
+  const i=G.selected, t=G.tiles[i], d=t.def;
+  if(d.t==='prop'){
+    const s=SETS[t.set];
+    const ownerName=t.owner===null?'For sale':G.players[t.owner].name+(t.owner===0?' (you)':'');
+    let h='<h3>'+t.icon+' '+t.name+'</h3>'+
+      '<div class="crow"><span>Set</span><b>'+s.icon+' '+s.name+'</b></div>'+
+      '<div class="crow"><span>Owner</span><b>'+ownerName+(t.mortgaged?' 🏚️ mortgaged':'')+'</b></div>'+
+      '<div class="crow"><span>Building level</span><b>'+(t.level>=5?'🌟 Grand Kennel':t.level+' / 5')+'</b></div>'+
+      '<div class="crow"><span>Rent now</span><b>🦴 '+fmt(rentFor(t))+' × mult</b></div>';
+    if(t.owner===null) h+='<div class="crow"><span>Price</span><b>🦴 '+fmt(t.price)+'</b></div>';
+    const me=G.players[0];
+    if(t.owner===0 && !G.over && G.cur===0 && !G.busy){
+      if(!t.mortgaged && fullSet(0,t.set) && t.level<5){
+        const cost=buildCost(t);
+        h+='<button class="cbtn green" id="cBuild" '+(me.bones<cost?'disabled':'')+'>🏠 Build L'+(t.level+1)+' (🦴'+fmt(cost)+')</button>';
+      }
+      if(!t.mortgaged) h+='<button class="cbtn orange" id="cMort">🏚️ Mortgage (+🦴'+fmt(Math.round(t.price/2))+')</button>';
+      else h+='<button class="cbtn green" id="cUnmort" '+(me.bones<Math.round(t.price*0.55)?'disabled':'')+'>🏠 Unmortgage (🦴'+fmt(Math.round(t.price*0.55))+')</button>';
+    } else if(t.owner===0 && t.mortgaged){
+      h+='<p style="font-size:11px">🏚️ Mortgaged: no rent collected here.</p>';
+    }
+    c.innerHTML=h;
+    const bb=$('cBuild'); if(bb) bb.addEventListener('click',()=>doBuild(0,i));
+    const mb=$('cMort'); if(mb) mb.addEventListener('click',()=>doMortgage(0,i));
+    const um=$('cUnmort'); if(um) um.addEventListener('click',()=>doUnmortgage(0,i));
+  }else{
+    const names={start:['🏠','Home','Pass or land here to collect salary.'],pound:['🐾','Dog Pound','Just visiting… unless you\'re stuck here!'],
+      gotopound:['🚔','Go To Pound','Uh oh. Straight to the pound!'],fountain:['⛲','Treat Fountain','A refreshing bonus of bones!'],
+      chance:['🍀','Lucky Leash','Draw a chance card. Fortune favors the furry.'],
+      heist:['🎯','Treat Heist','Pick 3 vaults and steal bones from your rival!'],
+      shutdown:['💥','Shutdown','Smash a rival building for a bone reward. Shields block it!'],
+      tax:[''+d.icon,d.name,d.desc||'Pay up!']};
+    const n=names[d.t];
+    c.innerHTML='<h3>'+n[0]+' '+n[1]+'</h3><p>'+n[2]+'</p>';
+  }
+}
+function renderControls(){
+  const seg=$('multSeg');
+  if(seg&&seg.querySelectorAll){
+    const bs=seg.querySelectorAll('button');
+    for(let k=0;k<bs.length;k++){ const b=bs[k];
+      if(b.classList) b.classList.toggle('on', parseInt(b.getAttribute('data-m'),10)===G.mult);
+    }
+  }
+  const rb=$('rollBtn');
+  if(rb){ rb.disabled=G.busy||G.over||G.cur!==0; rb.textContent=G.over?'GAME OVER':(G.cur===0?'🎲 ROLL':'Rex…'); }
+  const cd=$('chestDot'); if(cd&&cd.classList) cd.classList.toggle('show', chestReady()&&!G.over);
+  const ad=$('albumDot'); if(ad&&ad.classList) ad.classList.toggle('show', G.packs>0);
+  const th=$('turnHint');
+  if(th) th.textContent=G.over?'Game over!':(G.cur===0?'Your turn — pick a multiplier and roll!':'Rex is taking his turn…');
+}
+function renderAll(){ renderPlayers(); renderBoard(); renderControls(); }
+/* ---------------- modal infra ---------------- */
+function openModal(html){
+  const r=$('modalRoot'); if(!r) return;
+  r.innerHTML='<div class="mback"><div class="modal">'+html+'</div></div>';
+}
+function closeModal(){ const r=$('modalRoot'); if(r) r.innerHTML=''; }
+function uiChoice(o){
+  // o: {title, html, options:[{value,label,sub,cls,disabled,auto}]}
+  if(G.auto){
+    const ok=(o.options||[]).filter(x=>!x.disabled);
+    const a=ok.find(x=>x.auto)||ok[0];
+    return Promise.resolve(a?a.value:null);
+  }
+  return new Promise(resolve=>{
+    let h='<h2>'+o.title+'</h2>'+(o.html||'');
+    (o.options||[]).forEach((x,k)=>{
+      h+='<button class="mbtn '+(x.cls||'')+'" data-k="'+k+'" '+(x.disabled?'disabled':'')+'>'+x.label+(x.sub?'<div style="font-size:11px;font-weight:400">'+x.sub+'</div>':'')+'</button>';
+    });
+    openModal(h);
+    const btns=$('modalRoot').querySelectorAll('button[data-k]');
+    for(let k=0;k<btns.length;k++){ (function(b){ b.addEventListener('click',()=>{ const v=o.options[parseInt(b.getAttribute('data-k'),10)].value; closeModal(); resolve(v); }); })(btns[k]); }
+  });
+}
+function uiInfo(title, html, okLabel){
+  if(G.auto) return Promise.resolve(true);
+  return new Promise(resolve=>{
+    openModal('<h2>'+title+'</h2>'+html+'<button class="mbtn green" id="mOk">'+(okLabel||'OK')+'</button>');
+    $('mOk').addEventListener('click',()=>{ closeModal(); resolve(true); });
+  });
+}
+/* ---------------- economy: pay / raise / bankrupt ---------------- */
+async function transfer(fromIdx, toIdx, amt, reason){
+  amt=Math.round(amt);
+  const p=G.players[fromIdx];
+  if(p.bones>=amt){ p.bones-=amt; if(toIdx!==null&&toIdx!==undefined) G.players[toIdx].bones+=amt; renderPlayers(); return true; }
+  const ok=await raiseFunds(fromIdx, amt, reason);
+  if(!ok){ bankrupt(fromIdx, reason); return false; }
+  p.bones-=amt; if(toIdx!==null&&toIdx!==undefined) G.players[toIdx].bones+=amt;
+  renderPlayers(); return true;
+}
+async function raiseFunds(pIdx, need, reason){
+  const p=G.players[pIdx];
+  const sold=[];
+  while(p.bones<need){
+    // 1) sell one building level: highest buildCost first
+    let best=-1,bestCost=-1;
+    G.tiles.forEach((t,i)=>{ if(t.owner===pIdx&&t.level>0&&!t.mortgaged){ const c=buildCost(t); if(c>bestCost){bestCost=c;best=i;} } });
+    if(best>=0){
+      const t=G.tiles[best]; t.level--; const refund=Math.round(buildCost(t)/2);
+      p.bones+=refund; sold.push('sold a dog house on '+t.name+' (+🦴'+fmt(refund)+')');
+      continue;
+    }
+    // 2) mortgage highest-price unmortgaged property
+    let mi=-1,mp=-1;
+    G.tiles.forEach((t,i)=>{ if(t.owner===pIdx&&t.def.t==='prop'&&!t.mortgaged){ if(t.price>mp){mp=t.price;mi=i;} } });
+    if(mi>=0){
+      const t=G.tiles[mi]; t.mortgaged=true; const amt=Math.round(t.price/2);
+      p.bones+=amt; sold.push('mortgaged '+t.name+' (+🦴'+fmt(amt)+')');
+      continue;
+    }
+    return false;
+  }
+  if(!G.auto && pIdx===0 && sold.length){
+    await uiInfo('💸 Raised funds', '<p>To pay '+fmt(need)+' bones'+(reason?' ('+reason+')':'')+', you automatically:<br>• '+sold.join('<br>• ')+'</p>');
+  } else if(sold.length){
+    log((p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b> '+sold.join(', ')+' to raise funds.');
+  }
+  renderAll(); save(); return true;
+}
+function bankrupt(pIdx, reason){
+  const p=G.players[pIdx], w=1-pIdx, winner=G.players[w];
+  G.over=true;
+  log('💀 <b>'+p.name+'</b> went BANKRUPT'+(reason?' ('+reason+')':'')+'!');
+  log('🏆 <b>'+winner.name+'</b> wins the game!');
+  lbUpdate();
+  submitScore({ player:'You', score:netWorth(0), boards:G.lb.boards, date:new Date().toISOString() });
+  save();
+  renderAll();
+  if(!G.auto){
+    openModal('<h2>🏆 '+(w===0?'You win!':'Rex wins!')+'</h2>'+
+      '<p>'+p.icon+' '+p.name+' went bankrupt'+(reason?' ('+reason+')':'')+'.</p>'+
+      '<div class="kv"><span>Boards completed</span><b>'+G.boardNum+'</b></div>'+
+      '<div class="kv"><span>Your net worth</span><b>🦴 '+fmt(netWorth(0))+'</b></div>'+
+      '<div class="kv"><span>Rex\'s net worth</span><b>🦴 '+fmt(netWorth(1))+'</b></div>'+
+      '<button class="mbtn green" id="mNew">🐾 New Game</button>');
+    $('mNew').addEventListener('click',()=>{ closeModal(); newGame(); renderAll(); loop(); });
+  }
+}
+/* ---------------- build / mortgage (manual) ---------------- */
+async function doBuild(pIdx, i){
+  const t=G.tiles[i], p=G.players[pIdx];
+  if(t.def.t!=='prop'||t.owner!==pIdx||t.mortgaged||!fullSet(pIdx,t.set)||t.level>=5) return false;
+  const cost=buildCost(t);
+  if(p.bones<cost){ if(pIdx===0&&!G.auto) toast('Not enough bones! Need 🦴'+fmt(cost)); return false; }
+  p.bones-=cost; t.level++;
+  log((p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b> built '+(t.level>=5?'🌟 <b>Grand Kennel</b>':'🏠 level '+t.level)+' on '+t.name+' (🦴'+fmt(cost)+')');
+  renderAll(); save();
+  await checkBoardCompleteNow();
+  return true;
+}
+function doMortgage(pIdx,i){
+  const t=G.tiles[i], p=G.players[pIdx];
+  if(t.def.t!=='prop'||t.owner!==pIdx||t.mortgaged||t.level>0) return;
+  t.mortgaged=true; const amt=Math.round(t.price/2); p.bones+=amt;
+  log('🏚️ '+p.name+' mortgaged '+t.name+' (+🦴'+fmt(amt)+')');
+  renderAll(); save();
+}
+function doUnmortgage(pIdx,i){
+  const t=G.tiles[i], p=G.players[pIdx];
+  if(t.def.t!=='prop'||t.owner!==pIdx||!t.mortgaged) return;
+  const cost=Math.round(t.price*0.55);
+  if(p.bones<cost){ if(pIdx===0&&!G.auto) toast('Need 🦴'+fmt(cost)+' to unmortgage'); return; }
+  p.bones-=cost; t.mortgaged=false;
+  log('🏠 '+p.name+' unmortgaged '+t.name+' (🦴'+fmt(cost)+')');
+  renderAll(); save();
+}
+/* ---------------- turn engine ---------------- */
+async function loop(){
+  if(G.loopOn) return;
+  G.loopOn=true;
+  try{
+    let guard=0;
+    while(!G.over && guard++<500){
+      if(G.cur===1) await sleep(650);
+      if(G.cur===0 && !G.auto) break;
+      await runTurn();
+      renderAll();
+      if(G.cur===0 && !G.auto) break;
+    }
+  }finally{ G.loopOn=false; renderAll(); }
+}
+async function runTurn(){
+  if(G.over) return;
+  const pIdx=G.cur, p=G.players[pIdx];
+  const who=(p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b>';
+  log('— '+who+' turn —');
+  renderAll();
+  // AI dice safety: never stall at zero
+  if(p.isAI && p.dice<5){ p.dice+=10; log('🤖 Rex begs for dice and gets +10 🎲'); }
+  // pound phase
+  if(p.inPound){
+    const r=await poundPhase(pIdx);
+    if(G.over) return;
+    if(r==='stay'){ endTurn(); return; }
+  }
+  // AI builds at start of its turn
+  if(p.isAI) aiBuild(pIdx);
+  // choose multiplier
+  let m=p.isAI?aiChooseMult(pIdx):G.mult;
+  m=clamp(m,1,10);
+  if(p.dice<m){
+    if(p.isAI){ m=1; }
+    else{
+      // auto-drop to affordable
+      const opts=[10,5,2,1].filter(x=>x<=p.dice);
+      if(!opts.length){
+        toast('Out of dice! Grab free dice 🎲');
+        openChestOrFree();
+        endTurn(); return;
+      }
+      m=opts[0]; G.mult=m;
+      toast('Multiplier lowered to '+m+'× (not enough dice)');
+    }
+  }
+  G.turnMult=m;
+  p.dice-=m;
+  // roll animation
+  const d1=1+rnd(6), d2=1+rnd(6);
+  await animateDice(d1,d2);
+  log(who+' rolled '+d1+' + '+d2+' = <b>'+(d1+d2)+'</b> ('+m+'×)');
+  let rolls=1;
+  let again=(d1===d2);
+  await moveSteps(pIdx, d1+d2);
+  if(G.over) return;
+  await resolveTile(pIdx, p.pos, 0);
+  if(G.over) return;
+  while(again && rolls<3 && !p.inPound){
+    rolls++; again=false;
+    log(who+' rolled doubles — roll again!');
+    await sleep(500);
+    if(p.dice<1){ if(p.isAI){p.dice+=5;} else { toast('Out of dice for the bonus roll'); break; } }
+    p.dice--;
+    const a=1+rnd(6), b=1+rnd(6);
+    await animateDice(a,b);
+    log(who+' rolled '+a+' + '+b+' = <b>'+(a+b)+'</b>');
+    await moveSteps(pIdx, a+b);
+    if(G.over) return;
+    await resolveTile(pIdx, p.pos, 0);
+    if(G.over) return;
+    again=(a===b);
+  }
+  if(G.boardDone){ G.boardDone=false; await checkBoardCompleteNow(); }
+  endTurn();
+}
+function endTurn(){
+  if(G.over){ save(); renderAll(); return; }
+  lbTouchNetWorth();
+  G.cur=1-G.cur;
+  save(); renderAll();
+}
+async function animateDice(d1,d2){
+  const el=$('diceFaces');
+  if(el&&!G.auto){
+    const ds=el.querySelectorAll?el.querySelectorAll('.die'):[];
+    if(ds.length>=2){
+      ds[0].classList.add('rolling'); ds[1].classList.add('rolling');
+      const t0=Date.now();
+      const iv=setInterval(()=>{ ds[0].textContent=DICE_FACE[rnd(6)]; ds[1].textContent=DICE_FACE[rnd(6)]; if(Date.now()-t0>450) clearInterval(iv); },70);
+      await sleep(550);
+      ds[0].textContent=DICE_FACE[d1-1]; ds[1].textContent=DICE_FACE[d2-1];
+      ds[0].classList.remove('rolling'); ds[1].classList.remove('rolling');
+    } else await sleep(200);
+  } else await sleep(G.auto?0:250);
+  renderPlayers();
+}
+async function moveSteps(pIdx,n){
+  const p=G.players[pIdx];
+  const dir=n>=0?1:-1, steps=Math.abs(n);
+  for(let k=0;k<steps;k++){
+    const old=p.pos;
+    p.pos=(p.pos+dir+28)%28;
+    if(dir>0 && p.pos<old){ // passed Home
+      const sal=G.salary*G.turnMult; p.bones+=sal;
+      log((p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b> passed 🏠 Home: +🦴'+fmt(sal));
+    }
+    if(!G.auto){
+      renderBoard();
+      const b=$('board');
+      if(b&&b.querySelectorAll){ const el=b.querySelectorAll('.tile')[p.pos]; if(el&&el.classList){ el.classList.add('hop'); } }
+    }
+    await sleep(G.auto?0:130);
+  }
+  renderAll();
+}
+async function goToTile(pIdx, target, thenResolve){
+  const p=G.players[pIdx];
+  const steps=(target-p.pos+28)%28;
+  await moveSteps(pIdx, steps);
+  if(G.over) return;
+  if(thenResolve) await resolveTile(pIdx, target, 1);
+}
+/* ---------------- tile resolution ---------------- */
+async function resolveTile(pIdx, idx, depth){
+  if(G.over||depth>3) return;
+  const p=G.players[pIdx], t=G.tiles[idx], d=t.def;
+  const who=(p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b>';
+  G.selected=idx;
+  if(d.t==='start'){ log(who+' is 🏠 Home. Cozy!'); }
+  else if(d.t==='prop'){ await landProp(pIdx, idx); }
+  else if(d.t==='chance'){ await drawChance(pIdx); }
+  else if(d.t==='heist'){ await doHeist(pIdx); }
+  else if(d.t==='shutdown'){ await doShutdown(pIdx); }
+  else if(d.t==='tax'){
+    const amt=d.amount*G.turnMult;
+    log(who+' landed on '+d.icon+' '+d.name+': pay 🦴'+fmt(amt));
+    await transfer(pIdx, null, amt, 'tax');
+  }
+  else if(d.t==='fountain'){
+    const amt=FOUNTAIN_AMT*G.turnMult; gain(pIdx, amt);
+    log(who+' drank at the ⛲ Treat Fountain: +🦴'+fmt(amt));
+    if(!p.isAI&&!G.auto) toast('⛲ +🦴'+fmt(amt));
+  }
+  else if(d.t==='pound'){ log(who+' is visiting the 🐾 Dog Pound. (Phew!)'); }
+  else if(d.t==='gotopound'){ sendToPound(pIdx); }
+  renderAll();
+}
+async function landProp(pIdx, idx){
+  const p=G.players[pIdx], t=G.tiles[idx];
+  const who=(p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b>';
+  if(t.owner===null){
+    log(who+' landed on unowned '+t.icon+' <b>'+t.name+'</b> (🦴'+fmt(t.price)+')');
+    let buy;
+    if(p.isAI){ buy=aiDecideBuy(pIdx,t); await sleep(400); }
+    else{
+      const s=SETS[t.set];
+      buy=await uiChoice({ title:t.icon+' '+t.name,
+        html:'<div class="kv"><span>Set</span><b>'+s.icon+' '+s.name+'</b></div>'+
+             '<div class="kv"><span>Price</span><b>🦴 '+fmt(t.price)+'</b></div>'+
+             '<div class="kv"><span>Rent (now)</span><b>🦴 '+fmt(rentFor(t))+' × mult</b></div>'+
+             '<div class="kv"><span>Your bones</span><b>🦴 '+fmt(p.bones)+'</b></div>',
+        options:[
+          { value:true, label:'💰 Buy for 🦴'+fmt(t.price), cls:'green', disabled:p.bones<t.price, auto:p.bones>=t.price },
+          { value:false, label:'🙈 Pass', cls:'grey', auto:p.bones<t.price },
+        ]});
+    }
+    if(buy){
+      if(p.bones<t.price){ log(who+' can\'t afford it!'); }
+      else{
+        p.bones-=t.price; t.owner=pIdx;
+        log(who+' bought '+t.icon+' <b>'+t.name+'</b> for 🦴'+fmt(t.price));
+        if(!p.isAI&&!G.auto) toast('🎉 You bought '+t.name+'!');
+        if(fullSet(pIdx,t.set)) log('🌟 '+who+' completed the <b>'+SETS[t.set].name+'</b> set! Build dog houses!');
+      }
+    } else log(who+' passed on '+t.name+'.');
+  }
+  else if(t.owner===pIdx){ log(who+' is home at '+t.icon+' '+t.name+'.'); }
+  else{
+    const o=G.players[t.owner];
+    if(t.mortgaged){ log(who+' landed on '+t.name+' — 🏚️ mortgaged, no rent.'); return; }
+    const rent=rentFor(t)*G.turnMult;
+    log(who+' landed on '+(o.isAI?'🤖':'🐶')+' <b>'+o.name+'</b>\'s '+t.icon+' '+t.name+': rent 🦴'+fmt(rent));
+    await transfer(pIdx, t.owner, rent, 'rent');
+  }
+}
+function sendToPound(pIdx){
+  const p=G.players[pIdx];
+  p.pos=7; p.inPound=true; p.poundTurns=0;
+  log((p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b> was sent to the 🐾 Dog Pound!');
+  if(!p.isAI&&!G.auto) toast('🐾 To the pound! Roll doubles, pay bail, or use a card.');
+  renderAll();
+}
+/* ---------------- pound ---------------- */
+async function poundPhase(pIdx){
+  const p=G.players[pIdx];
+  const who=(p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b>';
+  log(who+' is in the 🐾 Dog Pound (turn '+(p.poundTurns+1)+'/3)');
+  renderAll();
+  let act;
+  if(p.isAI){ act=aiPound(pIdx); await sleep(500); }
+  else{
+    act=await uiChoice({ title:'🐾 Dog Pound',
+      html:'<p>Roll <b>doubles</b> to break out, pay 🦴'+BAIL+' bail, or use a Good Pup Card.</p>',
+      options:[
+        { value:'roll', label:'🎲 Roll for doubles', cls:'orange', auto:true },
+        { value:'pay',  label:'💰 Pay bail (🦴'+BAIL+')', cls:'green', disabled:p.bones<BAIL },
+        { value:'card', label:'🎟️ Use Good Pup Card ('+p.freeCards+')', cls:'', disabled:p.freeCards<1 },
+      ]});
+  }
+  if(act==='card'){ p.freeCards--; p.inPound=false; p.poundTurns=0; log(who+' used a 🎟️ Good Pup Card to leave the pound!'); return 'out'; }
+  if(act==='pay'){
+    const ok=await transfer(pIdx,null,BAIL,'bail');
+    if(!ok) return 'stay';
+    p.inPound=false; p.poundTurns=0; log(who+' paid bail and left the pound.'); return 'out';
+  }
+  // roll
+  const d1=1+rnd(6), d2=1+rnd(6);
+  await animateDice(d1,d2);
+  if(d1===d2){
+    p.inPound=false; p.poundTurns=0;
+    log(who+' rolled doubles ('+d1+'+'+d2+') and broke out of the pound!');
+    await moveSteps(pIdx, d1+d2);
+    if(G.over) return 'stay';
+    await resolveTile(pIdx, p.pos, 0);
+    return 'stay'; // turn consumed by the breakout move
+  }
+  p.poundTurns++;
+  log(who+' rolled '+d1+'+'+d2+' — no doubles. Still in the pound.');
+  if(p.poundTurns>=3){
+    log(who+' served 3 turns — time to pay bail.');
+    const ok=await transfer(pIdx,null,BAIL,'bail');
+    if(!ok) return 'stay';
+    p.inPound=false; p.poundTurns=0;
+  }
+  return 'stay';
+}
+/* ---------------- chance ---------------- */
+function shuffleDeck(){ G.deck=shuffle(CHANCE_CARDS.map(c=>c.id)); }
+async function drawChance(pIdx){
+  const p=G.players[pIdx];
+  if(!G.deck.length) shuffleDeck();
+  const id=G.deck.pop();
+  const card=CHANCE_CARDS.find(c=>c.id===id);
+  const who=(p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b>';
+  log(who+' drew a 🍀 Lucky Leash card: <b>'+card.name+'</b>');
+  if(!G.auto){
+    await uiInfo('🍀 '+card.name, '<div class="cardreveal"><div class="big">'+card.icon+'</div><p>'+card.desc+'</p></div>');
+  } else await sleep(50);
+  await applyChance(pIdx, card);
+}
+async function applyChance(pIdx, card){
+  const p=G.players[pIdx], m=G.turnMult;
+  switch(card.id){
+    case 'buried':   gain(pIdx,150*m); log('🦴 +'+fmt(150*m)+' bones!'); break;
+    case 'vetbill':  await transfer(pIdx,null,100*m,'vet bill'); break;
+    case 'zoomies':  await goToTile(pIdx,0,true); break;
+    case 'squirrel': await moveSteps(pIdx,4); if(!G.over) await resolveTile(pIdx,p.pos,2); break;
+    case 'digging':  sendToPound(pIdx); break;
+    case 'freecard': p.freeCards++; log('🎟️ '+(p.isAI?'Rex':'You')+' kept a Good Pup Card!'); break;
+    case 'truck':    gain(pIdx,250*m); log('🚚 +'+fmt(250*m)+' bones!'); break;
+    case 'fleas':{   const n=countBuildings(pIdx), amt=40*m*n;
+      if(n>0){ log('🦟 Fleas! '+n+' houses × 🦴'+fmt(40*m)+' = 🦴'+fmt(amt)); await transfer(pIdx,null,amt,'fleas'); }
+      else log('🦟 Fleas! But no houses — phew.');
+      break; }
+    case 'bestshow': gain(pIdx,300*m); log('🏆 +'+fmt(300*m)+' bones!'); break;
+    case 'slippers': await transfer(pIdx,null,150*m,'slippers'); break;
+    case 'beachday': await goToTile(pIdx,13,true); break;
+    case 'nap':      await moveSteps(pIdx,-3); if(!G.over) await resolveTile(pIdx,p.pos,2); break;
+  }
+  renderAll(); save();
+}
+/* ---------------- heist ---------------- */
+function heistVaults(){
+  // 2 small, 2 medium, 2 large — shuffled, values × turnMult
+  const tiers=shuffle([30,30,80,80,150,150]);
+  return tiers.map(v=>v*G.turnMult);
+}
+async function doHeist(pIdx){
+  const p=G.players[pIdx], victim=1-pIdx, V=G.players[victim];
+  const who=(p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b>';
+  const vals=heistVaults();
+  log(who+' triggered a 🎯 <b>Treat Heist</b> on '+V.name+'!');
+  let picks;
+  if(p.isAI || G.auto){
+    picks=shuffle([0,1,2,3,4,5]).slice(0,3);
+    await sleep(600);
+  }else{
+    picks=await uiHeistPicks(vals);
+  }
+  if(!picks||!picks.length){ log('Heist fizzled.'); return; }
+  const total=picks.reduce((s,i)=>s+vals[i],0);
+  const stolen=Math.min(total, V.bones);
+  V.bones-=stolen; p.bones+=stolen;
+  log('🎯 '+who+' stole 🦴'+fmt(stolen)+' from '+V.name+'! ('+picks.map(i=>'vault '+(i+1)+': 🦴'+fmt(vals[i])).join(', ')+')');
+  if(pIdx===0){
+    if(stolen>G.lb.heist){ G.lb.heist=stolen; log('🏆 New biggest heist record: 🦴'+fmt(stolen)+'!'); }
+    if(!G.auto) toast('🎯 You stole 🦴'+fmt(stolen)+'!');
+  }
+  // lucky bonus: sometimes a pup portrait pack falls out of the vault
+  if(Math.random()<0.3){
+    G.packs++;
+    log('🎁 A Treat Bag tumbled out of the vault! (+1 pack)');
+    if(pIdx===0&&!G.auto) toast('🎁 Bonus Treat Bag!');
+  }
+  renderAll(); save();
+}
+function uiHeistPicks(vals){
+  return new Promise(resolve=>{
+    let picked=[];
+    function draw(){
+      let h='<h2>🎯 Treat Heist!</h2><p>Pick <b>3</b> vaults to crack. Steal from Rex!</p><div class="vaults">';
+      for(let i=0;i<6;i++){
+        const isP=picked.indexOf(i)>=0;
+        h+='<button class="vault'+(isP?' picked':'')+'" data-v="'+i+'">'+(isP?'💰':'🧰')+'<small>'+(isP?'🦴'+fmt(vals[i]):'???')+'</small></button>';
+      }
+      h+='</div><button class="mbtn grey" id="hCancel">Skip heist</button>';
+      openModal(h);
+      const vs=$('modalRoot').querySelectorAll('.vault');
+      for(let k=0;k<vs.length;k++){ (function(b){ b.addEventListener('click',()=>{
+        const i=parseInt(b.getAttribute('data-v'),10);
+        if(picked.indexOf(i)<0){ picked.push(i); if(picked.length>=3){ closeModal(); resolve(picked); } else draw(); }
+      }); })(vs[k]); }
+      $('hCancel').addEventListener('click',()=>{ closeModal(); resolve([]); });
+    }
+    draw();
+  });
+}
+/* ---------------- shutdown ---------------- */
+async function doShutdown(pIdx){
+  const p=G.players[pIdx], victim=1-pIdx, V=G.players[victim];
+  const who=(p.isAI?'🤖':'🐶')+' <b>'+p.name+'</b>';
+  log(who+' triggered a 💥 <b>Shutdown</b>!');
+  const targets=[];
+  G.tiles.forEach((t,i)=>{ if(t.owner===victim&&t.level>0) targets.push({i,t}); });
+  if(!targets.length){ log('💥 …but '+V.name+' has no buildings to smash. Small consolation: +🦴'+fmt(50*G.turnMult)); gain(pIdx,50*G.turnMult); return; }
+  if(V.shields>0){
+    V.shields--;
+    log('🛡️ '+V.name+' blocked the shutdown with a Chew Toy Shield! ('+V.shields+' left)');
+    if(victim===0&&!G.auto) toast('🛡️ Your shield blocked Rex\'s shutdown!');
+    renderAll(); save(); return;
+  }
+  let chosen;
+  if(p.isAI||G.auto){
+    targets.sort((a,b)=>(b.t.level-a.t.level)||(b.t.price-a.t.price));
+    chosen=targets[0]; await sleep(500);
+  }else{
+    const v=await uiChoice({ title:'💥 Shutdown!',
+      html:'<p>Pick one of Rex\'s buildings to smash (it loses 1 level):</p>',
+      options:targets.map(x=>({ value:x.i, auto:true,
+        label:'💥 '+x.t.icon+' '+x.t.name+' (Lv '+x.t.level+')',
+        sub:'Reward: 🦴'+fmt((80+40*x.t.level)*G.turnMult) }))});
+    if(v===null||v===undefined){ log('💥 Shutdown skipped.'); return; }
+    chosen=targets.find(x=>x.i===v);
+  }
+  const reward=(80+40*chosen.t.level)*G.turnMult;
+  chosen.t.level--;
+  gain(pIdx,reward);
+  log('💥 '+who+' smashed '+chosen.t.icon+' '+chosen.t.name+' down to level '+chosen.t.level+'! Reward: 🦴'+fmt(reward));
+  if(pIdx===0&&!G.auto) toast('💥 Smashed! +🦴'+fmt(reward));
+  renderAll(); save();
+}
+/* ---------------- treat chest & free dice ---------------- */
+function chestReady(){ return Date.now()-G.chestTs>=CHEST_COOLDOWN_MS; }
+function openChestOrFree(){
+  if(chestReady()){ claimChest(); return; }
+  if(G.players[0].dice<5 && Date.now()-G.freeDiceTs>=FREE_DICE_COOLDOWN_MS){ claimFreeDice(); }
+}
+async function claimChest(){
+  if(!chestReady()){ const mins=Math.ceil((CHEST_COOLDOWN_MS-(Date.now()-G.chestTs))/60000); toast('🎁 Chest refills in ~'+mins+' min'); return; }
+  G.chestTs=Date.now();
+  const p=G.players[0];
+  p.dice=Math.min(DICE_MAX,p.dice+CHEST_DICE); p.bones+=CHEST_BONES; G.packs++;
+  log('🎁 <b>Treat Chest</b> opened! +🎲'+CHEST_DICE+' dice, +🦴'+CHEST_BONES+' bones, +1 Treat Bag!');
+  if(!G.auto){ await uiInfo('🎁 Treat Chest!', '<div class="cardreveal"><div class="big">🎁</div><p>+🎲 '+CHEST_DICE+' dice<br>+🦴 '+CHEST_BONES+' bones<br>+1 🎁 Treat Bag (Pup Portraits)</p></div>'); }
+  renderAll(); save();
+}
+function freeDiceReady(){ return G.players[0].dice<5 && Date.now()-G.freeDiceTs>=FREE_DICE_COOLDOWN_MS; }
+function claimFreeDice(){
+  if(!freeDiceReady()) return;
+  G.freeDiceTs=Date.now();
+  G.players[0].dice=Math.min(DICE_MAX,G.players[0].dice+5);
+  log('🎲 Free dice! +5 (come back in a minute for more)');
+  toast('🎲 +5 free dice!');
+  renderAll(); save();
+}
+/* ---------------- AI ---------------- */
+function aiChooseMult(pIdx){
+  const p=G.players[pIdx];
+  if(p.bones>5000&&p.dice>=10) return pick([5,5,2,10]);
+  if(p.bones>2500&&p.dice>=5) return pick([2,2,5]);
+  return p.dice>=2?pick([1,1,2]):1;
+}
+function aiDecideBuy(pIdx,t){
+  const p=G.players[pIdx];
+  const completes=setTiles(t.set).every(x=>x.t.owner===pIdx||x.t===t);
+  const reserve=completes?60:250;
+  return p.bones-t.price>=reserve;
+}
+function aiBuild(pIdx){
+  const p=G.players[pIdx];
+  let guard=0;
+  while(guard++<20){
+    // unmortgage first if it blocks a set
+    let acted=false;
+    for(let s=0;s<8;s++){
+      if(!fullSet(pIdx,s)) continue;
+      const props=setTiles(s);
+      const m=props.find(x=>x.t.mortgaged);
+      if(m){ const cost=Math.round(m.t.price*0.55); if(p.bones-cost>300){ p.bones-=cost; m.t.mortgaged=false; log('🤖 Rex unmortgaged '+m.t.name); acted=true; } }
+    }
+    if(acted) continue;
+    // build cheapest level-up on full sets, keeping a reserve
+    let best=null,bestScore=-1;
+    for(let s=0;s<8;s++){
+      if(!fullSet(pIdx,s)) continue;
+      setTiles(s).forEach(x=>{
+        if(x.t.level<5&&!x.t.mortgaged){
+          const score=x.t.rent*2-x.t.level; // prioritize high-rent, low-level
+          if(score>bestScore){ bestScore=score; best=x; }
+        }
+      });
+    }
+    if(!best) break;
+    const cost=buildCost(best.t);
+    if(p.bones-cost<350) break;
+    p.bones-=cost; best.t.level++;
+    log('🤖 Rex built '+(best.t.level>=5?'🌟 <b>Grand Kennel</b>':'🏠 level '+best.t.level)+' on '+best.t.name);
+    if(boardIsComplete()){ G.boardDone=true; break; } // advanceBoard runs after the turn
+    if(G.over) break;
+  }
+  renderAll(); save();
+}
+function aiPound(pIdx){
+  const p=G.players[pIdx];
+  if(p.freeCards>0) return 'card';
+  if(p.bones>600) return 'pay';
+  return 'roll';
+}
+/* ---------------- leaderboard ---------------- */
+function lbTouchNetWorth(){ const w=netWorth(0); if(w>G.lb.netWorth) G.lb.netWorth=w; }
+function lbUpdate(){ lbTouchNetWorth(); save(); }
+function fmtDur(ms){
+  if(!ms) return '—';
+  const s=Math.round(ms/1000);
+  if(s<60) return s+'s';
+  return Math.floor(s/60)+'m '+(s%60)+'s';
+}
+async function openLeaderboard(){
+  if(G.auto) return;
+  const hasBackend = !!(CONFIG.BACKEND_URL && CONFIG.BACKEND_URL.trim());
+  let h = '<h2>🏆 Leaderboard</h2>';
+  if(hasBackend){
+    h += '<h4 style="text-align:center;margin:6px 0 4px">🌍 Global Top Pups</h4>' +
+         '<div id="lbGlobal"><p style="text-align:center;font-size:12px;color:#776">Fetching…</p></div>';
+  }
+  h += '<h4 style="text-align:center;margin:6px 0 4px">🐶 Your Personal Bests</h4>' +
+    '<p style="text-align:center;font-size:11px;color:#776">Saved on this device</p>' +
+    '<table class="lb">'+
+    '<tr><td>💰 Highest net worth</td><td>🦴 '+fmt(G.lb.netWorth)+'</td></tr>'+
+    '<tr><td>🗺️ Boards completed</td><td>'+G.lb.boards+'</td></tr>'+
+    '<tr><td>⚡ Fastest board completion</td><td>'+fmtDur(G.lb.fastestMs)+'</td></tr>'+
+    '<tr><td>🎯 Biggest heist</td><td>🦴 '+fmt(G.lb.heist)+'</td></tr>'+
+    '</table>'+
+    '<div class="mrow"><button class="mbtn grey" id="lbClose">Close</button><button class="mbtn red" id="lbReset">Reset</button></div>';
+  openModal(h);
+  $('lbClose').addEventListener('click',closeModal);
+  $('lbReset').addEventListener('click',async()=>{
+    const y=await uiChoice({title:'Reset leaderboard?',options:[{value:true,label:'Yes, reset',cls:'red',auto:true},{value:false,label:'Cancel',cls:'grey'}]});
+    if(y){ G.lb={netWorth:0,boards:0,fastestMs:0,heist:0}; save(); openLeaderboard(); }
+  });
+  if(hasBackend){
+    let rows = null;
+    try{ rows = await fetchScores(); }catch(e){ rows = null; }
+    const el = $('lbGlobal');
+    if(el){
+      if(rows && rows.length){
+        el.innerHTML = '<table class="lb">' + rows.map((r,i)=>
+          '<tr><td>'+(i+1)+'. '+escapeHtml(r.player)+'</td><td>🦴 '+fmt(r.score)+'</td></tr>'
+        ).join('') + '</table>';
+      }else{
+        el.innerHTML = '<p style="text-align:center;font-size:12px;color:#776">Global scores unavailable offline — showing your personal bests.</p>';
+      }
+    }
+  }
+}
+/* ---------------- shop ---------------- */
+function buyItem(id){
+  const p=G.players[0], it=SHOP_ITEMS.find(x=>x.id===id);
+  if(!it||p.bones<it.price) return false;
+  if(id==='shield'&&p.shields>=3) return false;
+  if((id==='dice10'||id==='dice30')&&p.dice>=DICE_MAX) return false;
+  p.bones-=it.price;
+  if(id==='dice10') p.dice=Math.min(DICE_MAX,p.dice+10);
+  if(id==='dice30') p.dice=Math.min(DICE_MAX,p.dice+30);
+  if(id==='shield') p.shields=Math.min(3,p.shields+1);
+  if(id==='pack') G.packs++;
+  log('🛍️ You bought <b>'+it.name+'</b> for 🦴'+it.price);
+  renderAll(); save(); return true;
+}
+function openShop(){
+  if(G.auto) return;
+  const p=G.players[0];
+  let h='<h2>🛍️ Treat Shop</h2><p style="text-align:center">Your bones: <b>🦴 '+fmt(p.bones)+'</b><br><span style="font-size:11px;color:#776">In-game bones only — never real money!</span></p>';
+  SHOP_ITEMS.forEach(it=>{
+    const dis=p.bones<it.price||(it.id==='shield'&&p.shields>=3)||((it.id==='dice10'||it.id==='dice30')&&p.dice>=DICE_MAX);
+    h+='<div class="shopitem"><div class="sic">'+it.icon+'</div><div class="sinfo"><b>'+it.name+'</b><div>'+it.desc+'</div></div>'+
+       '<button class="mbtn green" data-s="'+it.id+'" '+(dis?'disabled':'')+'>🦴'+it.price+'</button></div>';
+  });
+  h+='<button class="mbtn grey" id="sClose">Close</button>';
+  openModal(h);
+  const bs=$('modalRoot').querySelectorAll('[data-s]');
+  for(let k=0;k<bs.length;k++){ (function(b){ b.addEventListener('click',()=>{ buyItem(b.getAttribute('data-s')); openShop(); }); })(bs[k]); }
+  $('sClose').addEventListener('click',closeModal);
+}
+/* ---------------- album ---------------- */
+function albumCount(){ return ALL_CARDS.filter(c=>G.album[c.id]).length; }
+function drawCard(){
+  const r=Math.random()*100;
+  const want=r<70?1:(r<92?2:3);
+  let pool=ALL_CARDS.filter(c=>c.stars===want);
+  const un=pool.filter(c=>!G.album[c.id]);
+  if(un.length&&Math.random()<0.75) pool=un;
+  return pick(pool).id;
+}
+function addCard(id){
+  const card=ALL_CARDS.find(c=>c.id===id);
+  const first=!G.album[id];
+  G.album[id]=(G.album[id]||0)+1;
+  if(!first){ gain(0,15); log('🔁 Duplicate '+card.icon+' '+card.name+' traded for 🦴15'); save(); return {dup:true,card}; }
+  log('🖼️ New Pup Portrait: '+card.icon+' <b>'+card.name+'</b> '+('⭐'.repeat(card.stars)));
+  const si=card.set;
+  if(!G.albumReward.sets[si]&&ALBUM_SETS[si].cards.every(c=>G.album[c.id])){
+    G.albumReward.sets[si]=1;
+    G.players[0].dice=Math.min(DICE_MAX,G.players[0].dice+15); gain(0,400);
+    log('🌟 Album set complete: <b>'+ALBUM_SETS[si].name+'</b>! Rewards: +🎲15, +🦴400');
+    if(!G.auto) toast('🌟 Album set complete! +🎲15 +🦴400');
+  }
+  if(!G.albumReward.all&&albumCount()===ALL_CARDS.length){
+    G.albumReward.all=true;
+    G.players[0].dice=Math.min(DICE_MAX,G.players[0].dice+60); gain(0,2000);
+    log('👑 <b>ALBUM COMPLETE!</b> Every pup collected! Rewards: +🎲60, +🦴2000');
+    if(!G.auto) toast('👑 ALBUM COMPLETE! Legendary!');
+  }
+  save(); return {dup:false,card};
+}
+function openPack(){
+  if(G.packs<1) return [];
+  G.packs--;
+  const res=[addCard(drawCard()),addCard(drawCard()),addCard(drawCard())];
+  renderAll(); save();
+  return res;
+}
+function openAlbum(){
+  if(G.auto) return;
+  let h='<h2>🖼️ Pup Portraits</h2><p style="text-align:center">'+albumCount()+' / '+ALL_CARDS.length+' collected'+(G.packs>0?' • 🎁 '+G.packs+' Treat Bag'+(G.packs>1?'s':''):'')+'</p>';
+  ALBUM_SETS.forEach((s,si)=>{
+    const done=s.cards.filter(c=>G.album[c.id]).length;
+    h+='<div class="albumset"><h4>'+s.name+' ('+done+'/4)'+(G.albumReward.sets[si]?' ✅':'')+'</h4><div class="acards">';
+    s.cards.forEach(c=>{
+      const owned=G.album[c.id];
+      h+='<div class="acard'+(owned?'':' missing')+'"><div class="ae">'+(owned?c.icon:'❔')+'</div>'+(owned?c.name:'???')+'<br>'+('⭐'.repeat(c.stars))+(owned>1?'<br>×'+owned:'')+'</div>';
+    });
+    h+='</div></div>';
+  });
+  if(G.packs>0) h+='<button class="mbtn orange" id="aOpen">🎁 Open Treat Bag ('+G.packs+')</button>';
+  else h+='<p style="text-align:center;font-size:12px">Earn Treat Bags from the Shop, Treat Chest, heists, and board completions!</p>';
+  h+='<button class="mbtn grey" id="aClose">Close</button>';
+  openModal(h);
+  $('aClose').addEventListener('click',closeModal);
+  const ao=$('aOpen');
+  if(ao) ao.addEventListener('click',async()=>{
+    const res=openPack();
+    let rh='<h2>🎁 Treat Bag!</h2>';
+    res.forEach(r=>{ rh+='<div class="cardreveal"><div class="big">'+r.card.icon+'</div><b>'+r.card.name+'</b> '+('⭐'.repeat(r.card.stars))+(r.dup?'<div style="font-size:11px">duplicate → 🦴15</div>':'<div style="font-size:11px;color:var(--good)">NEW!</div>')+'</div>'; });
+    rh+='<button class="mbtn green" id="aBack">Back to Album</button>';
+    openModal(rh);
+    $('aBack').addEventListener('click',openAlbum);
+  });
+}
+/* ---------------- boards ---------------- */
+function boardIsComplete(){ return G.tiles.every(t=>t.def.t!=='prop'||t.level===5); }
+async function checkBoardCompleteNow(){
+  if(G.over||G.advancing||!boardIsComplete()) return false;
+  G.advancing=true;
+  try{ await advanceBoard(); }finally{ G.advancing=false; }
+  return true;
+}
+async function advanceBoard(){
+  const dur=Date.now()-G.boardStartTs;
+  G.lb.boards++;
+  if(!G.lb.fastestMs||dur<G.lb.fastestMs) G.lb.fastestMs=dur;
+  submitScore({ player:'You', score:netWorth(0), boards:G.lb.boards, date:new Date().toISOString() });
+  const nn=G.boardNum+1;
+  if(!G.auto){
+    await uiInfo('🎉 Board Complete!',
+      '<div class="cardreveal"><div class="big">🏆</div><p>Every property on <b>'+G.themeName+'</b> is a maxed-out Grand Kennel!<br><br>Next stop: <b>'+themeFor(nn).name+'</b><br>Reward: +3 🎁 Treat Bags</p></div>');
+  }
+  G.boardNum=nn; G.salary=salaryFor(nn); G.priceScale=priceScaleFor(nn);
+  G.themeName=themeFor(nn).name+(nn>3?' (Encore '+nn+')':'');
+  buildTiles();
+  G.players.forEach(p=>{ p.pos=0; p.inPound=false; p.poundTurns=0; });
+  G.packs+=3; G.boardStartTs=Date.now(); G.selected=null; G.boardDone=false;
+  log('🎉 <b>Board '+nn+': '+G.themeName+'</b> — new properties, same pups! Bones, dice & album carried over. (+3 🎁)');
+  save(); renderAll();
+}
+/* ---------------- menu / how to ---------------- */
+function openMenu(){
+  if(G.auto) return;
+  openModal('<h2>☰ Menu</h2>'+
+    '<button class="mbtn" id="mHow">📖 How to Play</button>'+
+    '<button class="mbtn orange" id="mNew2">🐾 New Game</button>'+
+    '<button class="mbtn grey" id="mClose">Close</button>');
+  $('mClose').addEventListener('click',closeModal);
+  $('mHow').addEventListener('click',()=>{
+    openModal('<h2>📖 How to Play</h2>'+
+    '<p>🐶 <b>Goal:</b> bankrupt Rex by making him pay rent he can\'t afford — or complete boards for glory!</p>'+
+    '<p>🎲 <b>Roll:</b> pick a multiplier (1×/2×/5×/10×), then ROLL. Higher multipliers cost more dice but multiply rents, salary, heist loot and card payouts. Doubles = roll again!</p>'+
+    '<p>🏠 <b>Properties:</b> land on an unowned spot to buy it. Own both in a color set to build dog houses (up to 🌟 Grand Kennel). Full unimproved sets charge double rent!</p>'+
+    '<p>🎯 <b>Treat Heist:</b> pick 3 vaults, steal bones from your rival.</p>'+
+    '<p>💥 <b>Shutdown:</b> smash a rival building for bones. 🛡️ Chew Toy Shields (shop) block it.</p>'+
+    '<p>🍀 <b>Lucky Leash:</b> chance cards — good and bad!</p>'+
+    '<p>🐾 <b>Dog Pound:</b> roll doubles, pay 🦴'+BAIL+' bail, or use a 🎟️ Good Pup Card. 3 turns max.</p>'+
+    '<p>🖼️ <b>Pup Portraits:</b> collect cards from Treat Bags; complete sets for dice & bones.</p>'+
+    '<p>🎁 <b>Treat Chest</b> refills every few hours. Dice regenerate over time — you\'ll never be stuck at zero.</p>'+
+    '<button class="mbtn green" id="mBack">Got it!</button>');
+    $('mBack').addEventListener('click',openMenu);
+  });
+  $('mNew2').addEventListener('click',async()=>{
+    const y=await uiChoice({title:'Start a new game?',html:'<p>Your current run, properties and album will be reset. Leaderboard bests are kept.</p>',
+      options:[{value:true,label:'Yes, new game',cls:'red',auto:true},{value:false,label:'Keep playing',cls:'grey'}]});
+    if(y){ try{localStorage.removeItem(SAVE_KEY);}catch(e){} closeModal(); newGame(); renderAll(); }
+  });
+}
+/* ---------------- boot & timers ---------------- */
+function tick(){
+  if(G.over||G.auto) return;
+  const now=Date.now(), elapsed=Math.floor((now-G.lastRegen)/1000);
+  if(elapsed>=REGEN_SECS){
+    const n=Math.floor(elapsed/REGEN_SECS);
+    G.lastRegen+=n*REGEN_SECS*1000;
+    let changed=false;
+    G.players.forEach(p=>{ if(p.dice<DICE_REGEN_CAP){ p.dice=Math.min(DICE_REGEN_CAP,p.dice+n); changed=true; } });
+    if(changed) renderPlayers();
+  }
+  renderControls();
+}
+function bindUI(){
+  const rb=$('rollBtn');
+  if(rb) rb.addEventListener('click',async()=>{
+    if(G.busy||G.over||G.cur!==0) return;
+    G.busy=true;
+    try{ await runTurn(); }catch(e){ log('⚠️ hiccup: '+e.message); }
+    finally{ G.busy=false; }
+    renderAll(); loop();
+  });
+  const seg=$('multSeg');
+  if(seg&&seg.querySelectorAll){
+    const bs=seg.querySelectorAll('button');
+    for(let k=0;k<bs.length;k++){ (function(b){ b.addEventListener('click',()=>{ G.mult=parseInt(b.getAttribute('data-m'),10); renderControls(); }); })(bs[k]); }
+  }
+  const sh=$('btnShop'); if(sh) sh.addEventListener('click',openShop);
+  const al=$('btnAlbum'); if(al) al.addEventListener('click',openAlbum);
+  const ch=$('btnChest'); if(ch) ch.addEventListener('click',()=>{
+    if(G.over) return;
+    if(chestReady()) claimChest();
+    else if(freeDiceReady()) claimFreeDice();
+    else{
+      const m=Math.ceil((CHEST_COOLDOWN_MS-(Date.now()-G.chestTs))/60000);
+      toast('🎁 Chest refills in ~'+m+' min');
+    }
+  });
+  const lb=$('btnBoard'); if(lb) lb.addEventListener('click',openLeaderboard);
+  const mn=$('btnMenu'); if(mn) mn.addEventListener('click',openMenu);
+}
+function boot(){
+  let ok=false;
+  try{ ok=load(); }catch(e){ ok=false; }
+  if(ok){ log('💾 Save loaded — welcome back to Bark Avenue!'); }
+  else{ newGame(); }
+  renderAll(); bindUI();
+  setInterval(tick,2000);
+}
+/* test / debug hooks */
+var EXPORTS={ G:G, newGame:newGame, load:load, runTurn:runTurn, loop:loop, saveNow:saveNow,
+  transfer:transfer, raiseFunds:raiseFunds, bankrupt:bankrupt, doBuild:doBuild,
+  doHeist:doHeist, doShutdown:doShutdown, drawChance:drawChance, applyChance:applyChance,
+  poundPhase:poundPhase, sendToPound:sendToPound, checkBoardCompleteNow:checkBoardCompleteNow,
+  advanceBoard:advanceBoard, boardIsComplete:boardIsComplete, netWorth:netWorth,
+  rentFor:rentFor, buildCost:buildCost, fullSet:fullSet, claimChest:claimChest,
+  claimFreeDice:claimFreeDice, drawCard:drawCard, addCard:addCard, openPack:openPack,
+  buyItem:buyItem, lbUpdate:lbUpdate, aiBuild:aiBuild, moveSteps:moveSteps, goToTile:goToTile,
+  submitScore:submitScore, fetchScores:fetchScores, config:CONFIG };
+if(typeof window!=='undefined'){ window.G=G; window.GAME=EXPORTS; }
+if(typeof module!=='undefined'&&module.exports){ module.exports=EXPORTS; }
+if(typeof window!=='undefined'&&!window.__TEST__){ boot(); }
+</script>
+</body>
+</html>
