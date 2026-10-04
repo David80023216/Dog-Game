@@ -147,7 +147,7 @@ table.lb td:last-child{text-align:right;font-weight:800}
    the on-device personal-bests leaderboard exclusively.
    Every call below fails gracefully (empty URL, network error, timeout)
    and the game keeps working fully offline. No API keys are used. */
-const CONFIG = { BACKEND_URL: "" };
+const CONFIG = { BACKEND_URL: "https://bark-avenue-leaderboard.vercel.app/api" };
 const API_TIMEOUT_MS = 8000;
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
