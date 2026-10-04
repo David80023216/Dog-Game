@@ -4,7 +4,9 @@ A dog-themed mobile board game with Monopoly-Go-style mechanics — an **origina
 
 ## Play it
 
-Open `index.html` in any modern browser (mobile portrait recommended), or play the deployed version via GitHub Pages.
+🌍 **Play live now: https://bark-avenue-five.vercel.app/** (mobile portrait recommended)
+
+Or open `index.html` in any modern browser, or deploy via GitHub Pages from this repo.
 
 ## Features
 
